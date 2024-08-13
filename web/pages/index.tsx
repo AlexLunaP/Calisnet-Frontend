@@ -1,19 +1,17 @@
-import React, {useEffect, useState} from 'react'
+import React from "react";
+import Link from "next/link";
 
-function Index() {
-  const [message, setMessage] = useState("Loading");
+import { Image, Center, Button, Box, Spinner, Heading } from "@chakra-ui/react";
+import { signOut, useSession } from "next-auth/react";
 
-  useEffect(() => {
-    fetch("http://localhost:8080/api/home")
-    .then((response) => response.json())
-    .then((data) => {
-        setMessage(data.message);
-      })
-  }, [])
-
+// We can add a carousel here to display latest events for example
+export default function Home() {
   return (
-    <div>{message}</div>
-  )
+    <Center minH="100vh">
+      {/* Placeholder content or simply an empty Box */}
+      <Box maxW="sm" overflow="hidden">
+        {/* This box can be used for future content */}
+      </Box>
+    </Center>
+  );
 }
-
-export default Index
