@@ -16,7 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
-import UserDTO from "../../models/userDTO";
+import UserDTO from "../../Models/userDTO";
 import { useForm } from "react-hook-form";
 import Link from "next/link";
 

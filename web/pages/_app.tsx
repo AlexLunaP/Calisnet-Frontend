@@ -3,7 +3,7 @@ import type { AppProps } from "next/app";
 import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import { SessionProvider } from "next-auth/react";
 import theme from "../theme/theme";
-import Layout from "../components/Layout/Layout";
+import Layout from "../Components/Layout/Layout";
 
 const config = {
   initialColorMode: "light",

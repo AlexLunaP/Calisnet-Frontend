@@ -3,7 +3,7 @@ import { signIn } from "next-auth/react";
 import Router from "next/router";
 import { useToast } from "@chakra-ui/react";
 
-import { LogInForm, LogInFormData } from "../components/Login/LogInForm";
+import { LogInForm, LogInFormData } from "../Components/Login/LogInForm";
 
 export default function LogIn() {
   const toast = useToast();

@@ -5,7 +5,7 @@ import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@chakra-ui/react";
 
-import { SignUpForm, SignUpFormData } from "../components/SignUp/SignUpForm";
+import { SignUpForm, SignUpFormData } from "../Components/SignUp/SignUpForm";
 
 export default function SignUp() {
   const toast = useToast();

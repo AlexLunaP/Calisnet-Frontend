@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import UserDTO from "../../models/userDTO";
+import UserDTO from "../../Models/userDTO";
 
 import {
   Flex,

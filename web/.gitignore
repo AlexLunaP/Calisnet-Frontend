@@ -27,6 +27,7 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
 
 # vercel
 .vercel
@@ -34,3 +35,33 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Sensitive configuration files
+config.json
+config.yaml
+secrets.json
+
+# Private keys
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Log files
+*.log
+logs/
+
+# Backup files
+*.bak
+*.swp
+*.tmp
+*.old
+
+# Build artifacts
+/dist
+/tmp
+/out
+
+# IDE and editor configurations
+.vscode/
+.idea/
