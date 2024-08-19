@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Container } from "@chakra-ui/react";
 import Header from "./Header";
 import Footer from "./Footer";
+import dynamic from "next/dynamic";
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
@@ -15,4 +16,4 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
-export default Layout;
+export default dynamic(() => Promise.resolve(Layout), { ssr: false });
