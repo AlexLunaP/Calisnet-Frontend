@@ -5,7 +5,7 @@ import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@chakra-ui/react";
 
-import { SignUpForm, SignUpFormData } from "../Components/SignUp/SignUpForm";
+import { SignUpForm, SignUpFormData } from "@/Components/SignUp/SignUpForm";
 
 export default function SignUp() {
   const toast = useToast();
@@ -18,14 +18,7 @@ export default function SignUp() {
         body
       );
 
-      if (result?.data?.error) {
-        toast({
-          title: "User already exists",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      } else if (result?.data?.ok) {
+      if (result.status === 200) {
         toast({
           title: "User was registered",
           status: "success",
@@ -35,6 +28,13 @@ export default function SignUp() {
         Router.push("/");
         signIn("credentials", { redirect: false, ...userData });
         Router.push("/");
+      } else if (result.status === 400) {
+        toast({
+          title: "User already exists",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
       }
     },
     [toast]

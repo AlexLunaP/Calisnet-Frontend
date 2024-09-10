@@ -26,25 +26,118 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from "@chakra-ui/icons";
+import { Link as ChakraLink } from "@chakra-ui/react";
+import NextLink from "next/link";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { signOut, useSession } from "next-auth/react";
+import { Session } from "next-auth";
+import axios from "axios";
+import Image from "next/image";
+
+interface UserData {
+  userId: string;
+  username: string;
+  userEmail: string;
+  profileImageUrl: string;
+}
+
+interface NavItem {
+  label: string;
+  subLabel?: string;
+  children?: Array<NavItem>;
+  href?: string;
+}
+
+const NAV_ITEMS: Array<NavItem> = [
+  {
+    label: "Home",
+    href: "/",
+  },
+  {
+    label: "Competitions",
+    href: "/competition/competitions",
+    children: [
+      {
+        label: "Explore Competitions",
+        href: "/competition/competitions",
+      },
+      {
+        label: "My Competitions",
+        href: "/competition/user-competitions",
+      },
+    ],
+  },
+];
 
 export default function Header() {
-  const { isOpen, onToggle } = useDisclosure();
+  const { isOpen, onToggle, onClose } = useDisclosure();
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    if (session) {
+      axios
+        .get(
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/user/get/${session.userId}`
+        )
+        .then((response) => {
+          console.log(response);
+          const data = response.data;
+          setUserData({
+            userId: data.user_id || "",
+            username: data.username || "",
+            userEmail: data.user_email || "",
+            profileImageUrl: data.profile_image_url || "",
+          });
+        })
+        .catch((error) => {
+          if (error.response) {
+            if (error.response.status >= 400) {
+              router.push("/login");
+              signOut({ callbackUrl: "/login" });
+            }
+          }
+        });
+    }
+  }, [router, session]);
+
+  const mobileNavRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        mobileNavRef.current &&
+        !mobileNavRef.current.contains(event.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   return (
     <Box>
       <Flex
-        bg={"paleYellow"}
+        bg={"lightOrange"}
         color={"gray.600"}
         minH={"60px"}
         py={{ base: 2 }}
         px={{ base: 4 }}
+        pl={{ base: 8 }}
         borderBottom={1}
         borderStyle={"solid"}
         borderColor={"gray.200"}
@@ -68,15 +161,33 @@ export default function Header() {
         </Flex>
 
         {/* Logo and Navigation */}
-        <Flex flex={{ base: 1 }} justify={{ base: "center", md: "center" }}>
+        <Flex
+          flex={{ base: 1 }}
+          justify={{ base: "flex-start", md: "flex-start" }}
+          align="center"
+        >
           <Flex justify="flex-start" align="center">
             <Text
               textAlign={useBreakpointValue({ base: "center", md: "left" })}
               fontFamily={"heading"}
               color={"gray.800"}
             >
-              <Link href="/">Logo</Link>
+              <Link href="/">
+                <Image src="/logo.png" alt="Logo" width={60} height={60} />
+              </Link>
             </Text>
+            <Link href="/">
+              <Text
+                ml={2}
+                fontWeight={"bold"}
+                fontSize={"larger"}
+                color={"gray.800"}
+                fontFamily={"heading"}
+                textAlign={useBreakpointValue({ base: "center", md: "left" })}
+              >
+                Calisnet
+              </Text>
+            </Link>
           </Flex>
 
           {/* Desktop Navigation */}
@@ -91,6 +202,7 @@ export default function Header() {
           justify={"flex-end"}
           direction={"row"}
           spacing={6}
+          pr={4}
         >
           {status === "authenticated" ? (
             <Menu>
@@ -101,18 +213,12 @@ export default function Header() {
                 cursor={"pointer"}
                 minW={0}
               >
-                <Avatar
-                  size={"sm"}
-                  src={"Calisnet-frontend/web/public/avatar.svg"}
-                />
+                <Avatar size={"sm"} src={userData?.profileImageUrl} />
               </MenuButton>
               <MenuList alignItems={"center"}>
                 <br />
                 <Center>
-                  <Avatar
-                    size={"2xl"}
-                    src={"Calisnet-frontend/web/public/avatar.svg"}
-                  />
+                  <Avatar size={"2xl"} src={userData?.profileImageUrl} />
                 </Center>
                 <br />
                 <Center>
@@ -120,9 +226,17 @@ export default function Header() {
                 </Center>
                 <br />
                 <MenuDivider />
-                <MenuItem>Settings</MenuItem>
-                <MenuItem>Your Profile</MenuItem>
-                <MenuItem onClick={() => signOut()}>Sign Out</MenuItem>
+                <MenuItem onClick={() => router.push("/settings")}>
+                  Settings
+                </MenuItem>
+                <MenuItem
+                  onClick={() => router.push(`/user/${userData?.username}`)}
+                >
+                  Your Profile
+                </MenuItem>
+                <MenuItem onClick={() => signOut({ callbackUrl: "/" })}>
+                  Sign Out
+                </MenuItem>
               </MenuList>
             </Menu>
           ) : (
@@ -131,7 +245,7 @@ export default function Header() {
                 <Link href="/login" passHref>
                   <Button
                     as={"a"}
-                    fontSize={"sm"}
+                    fontSize={"md"}
                     fontWeight={400}
                     variant={"link"}
                     mr={6}
@@ -143,7 +257,7 @@ export default function Header() {
                   <Button
                     as={"a"}
                     display={{ base: "inline-flex", md: "inline-flex" }}
-                    fontSize={"sm"}
+                    fontSize={"md"}
                     fontWeight={600}
                     color={"white"}
                     bg={"warmYellow"}
@@ -162,13 +276,17 @@ export default function Header() {
       </Flex>
 
       <Collapse in={isOpen} animateOpacity>
-        <MobileNav />
+        <Box ref={mobileNavRef}>
+          <MobileNav />
+        </Box>
       </Collapse>
     </Box>
   );
 }
 
 const DesktopNav = () => {
+  const { data: session } = useSession();
+  const router = useRouter();
   const linkColor = "lightGray";
   const linkHoverColor = "charcoalGray";
   const popoverContentBgColor = "white";
@@ -179,10 +297,10 @@ const DesktopNav = () => {
         <Box key={navItem.label}>
           <Popover trigger={"hover"} placement={"bottom-start"}>
             <PopoverTrigger>
-              <Link href={navItem.href ?? "#"} passHref>
-                <Box
+              <NextLink href={navItem.href ?? "/"} passHref>
+                <ChakraLink
                   p={2}
-                  fontSize={"sm"}
+                  fontSize={"md"}
                   fontWeight={500}
                   color={linkColor}
                   _hover={{
@@ -191,8 +309,8 @@ const DesktopNav = () => {
                   }}
                 >
                   {navItem.label}
-                </Box>
-              </Link>
+                </ChakraLink>
+              </NextLink>
             </PopoverTrigger>
 
             {navItem.children && (
@@ -206,7 +324,32 @@ const DesktopNav = () => {
               >
                 <Stack>
                   {navItem.children.map((child) => (
-                    <DesktopSubNav key={child.label} {...child} />
+                    <NextLink
+                      href={child.href ?? "/"}
+                      key={child.label}
+                      passHref
+                    >
+                      <ChakraLink
+                        role={"group"}
+                        display={"block"}
+                        p={2}
+                        rounded={"md"}
+                        _hover={{ bg: "lightOrange" }}
+                      >
+                        <Stack direction={"row"} align={"center"}>
+                          <Box>
+                            <Text
+                              transition={"all .3s ease"}
+                              _groupHover={{ color: "charcoalGray" }}
+                              fontWeight={500}
+                            >
+                              {child.label}
+                            </Text>
+                            <Text fontSize={"sm"}>{child.subLabel}</Text>
+                          </Box>
+                        </Stack>
+                      </ChakraLink>
+                    </NextLink>
                   ))}
                 </Stack>
               </PopoverContent>
@@ -218,53 +361,17 @@ const DesktopNav = () => {
   );
 };
 
-const DesktopSubNav = ({ label, href, subLabel }: NavItem) => {
+const MobileNav = React.forwardRef<HTMLDivElement>((props, ref) => {
   return (
-    <Link href="{href}" passHref>
-      <Box
-        role={"group"}
-        display={"block"}
-        p={2}
-        rounded={"md"}
-        _hover={{ bg: "paleYellow" }}
-      >
-        <Stack direction={"row"} align={"center"}>
-          <Box>
-            <Text
-              transition={"all .3s ease"}
-              _groupHover={{ color: "deepOrange" }}
-              fontWeight={500}
-            >
-              {label}
-            </Text>
-            <Text fontSize={"sm"}>{subLabel}</Text>
-          </Box>
-          <Flex
-            transition={"all .3s ease"}
-            transform={"translateX(-10px)"}
-            opacity={0}
-            _groupHover={{ opacity: "100%", transform: "translateX(0)" }}
-            justify={"flex-end"}
-            align={"center"}
-            flex={1}
-          >
-            <Icon color={"pink.400"} w={5} h={5} as={ChevronRightIcon} />
-          </Flex>
-        </Stack>
-      </Box>
-    </Link>
-  );
-};
-
-const MobileNav = () => {
-  return (
-    <Stack bg={"white"} p={4} display={{ md: "none" }}>
+    <Stack bg={"white"} p={4} display={{ md: "none" }} ref={ref}>
       {NAV_ITEMS.map((navItem) => (
         <MobileNavItem key={navItem.label} {...navItem} />
       ))}
     </Stack>
   );
-};
+});
+
+MobileNav.displayName = "MobileNav";
 
 const MobileNavItem = ({ label, children, href }: NavItem) => {
   const { isOpen, onToggle } = useDisclosure();
@@ -306,42 +413,14 @@ const MobileNavItem = ({ label, children, href }: NavItem) => {
         >
           {children &&
             children.map((child) => (
-              <Link href={child.href ?? "/"} key={child.label} passHref>
-                <Box py={2}>{child.label}</Box>
-              </Link>
+              <NextLink href={child.href ?? "/"} key={child.label} passHref>
+                <ChakraLink>
+                  <Box py={2}>{child.label}</Box>
+                </ChakraLink>
+              </NextLink>
             ))}
         </Stack>
       </Collapse>
     </Stack>
   );
 };
-
-interface NavItem {
-  label: string;
-  subLabel?: string;
-  children?: Array<NavItem>;
-  href?: string;
-}
-
-const NAV_ITEMS: Array<NavItem> = [
-  {
-    label: "Home",
-    href: "/",
-  },
-  {
-    label: "Competitions",
-    children: [
-      {
-        label: "Explore New Competitions",
-        href: "/events",
-      },
-      {
-        label: "My Competitions",
-        href: "/competitions",
-      },
-    ],
-  },
-  {
-    label: "Athletes",
-  },
-];

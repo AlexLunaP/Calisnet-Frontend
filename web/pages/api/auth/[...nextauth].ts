@@ -27,7 +27,6 @@ declare module "next-auth" {
     user: {
       name: string | null;
       email: string | null;
-      image: string | null;
     };
   }
 
@@ -77,8 +76,8 @@ const options = {
             process.env.NODE_JWT_SECRET as string
           ) as JwtPayload & {
             sub: {
-              userId: string;
-              userEmail: string;
+              user_id: string;
+              user_email: string;
               username: string;
             };
           };
@@ -92,10 +91,10 @@ const options = {
           }
 
           return {
-            id: decodedToken.sub.userId,
-            userId: decodedToken.sub.userId,
-            userEmail: decodedToken.sub.userEmail,
-            username: decodedToken.sub.username,
+            id: res.data.user.user_id,
+            userId: res.data.user.user_id,
+            userEmail: res.data.user.user_email,
+            username: res.data.user.username,
             access_token: res.data.access_token,
           };
         } catch (error) {
@@ -162,8 +161,7 @@ const options = {
       session.userId = token.userId as string;
       session.user = {
         name: token.username as string,
-        email: token.userEmail as string,
-        image: null,
+        email: token.user_email as string,
       };
       return session;
     },

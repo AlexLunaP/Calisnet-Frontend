@@ -14,3 +14,8 @@ a {
 * {
   box-sizing: border-box;
 }
+
+:root {
+  --pagination-color: #ff6f00;
+  --pagination-hover-color: #f9a825;
+}

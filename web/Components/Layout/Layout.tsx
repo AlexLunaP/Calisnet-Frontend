@@ -1,18 +1,20 @@
 import React from "react";
-import { Box, Container } from "@chakra-ui/react";
+import { Box, Container, Flex } from "@chakra-ui/react";
 import Header from "./Header";
 import Footer from "./Footer";
 import dynamic from "next/dynamic";
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <Box>
+    <Flex direction="column" minH="100vh">
       <Header />
-      <Container maxW="container.lg" py={6}>
-        {children}
-      </Container>
+      <Box flex="1">
+        <Container maxW="container.lg" py={6}>
+          {children}
+        </Container>
+      </Box>
       <Footer />
-    </Box>
+    </Flex>
   );
 };
 
