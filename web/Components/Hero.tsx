@@ -1,13 +1,5 @@
 import * as React from "react";
-import {
-  Container,
-  chakra,
-  Stack,
-  Text,
-  Button,
-  Box,
-  Link,
-} from "@chakra-ui/react";
+import { Container, chakra, Stack, Button, Link } from "@chakra-ui/react";
 import { useSession } from "next-auth/react";
 
 const HeroSection = () => {
@@ -36,7 +28,7 @@ const HeroSection = () => {
           w={{ base: "100%", sm: "auto" }}
           spacing={5}
         >
-          <Link href="/competition/competitions">
+          <Link href="/competitions">
             <Button
               as="a"
               colorScheme="orange"
@@ -49,7 +41,7 @@ const HeroSection = () => {
               Explore Competitions
             </Button>
           </Link>
-          <Link href={session ? "/competition/create" : "/login"}>
+          <Link href={session ? "/competitions/create" : "/login"}>
             <Button
               as="a"
               colorScheme="gray"
@@ -59,7 +51,7 @@ const HeroSection = () => {
               height="3.5rem"
               fontSize="1.2rem"
             >
-              Create New Competition
+              Create Competition
             </Button>
           </Link>
         </Stack>
