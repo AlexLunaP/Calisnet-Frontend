@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import axios from "axios";
 import {
@@ -49,6 +49,27 @@ const CompetitionPage = () => {
 
   const isMobile = useBreakpointValue({ base: true, md: false });
 
+  const fetchCompetitionData = useCallback(async () => {
+    if (!competitionId) {
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competitions/${competitionId}`
+      );
+      setCompetitionData(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching competition data:", error);
+      setLoading(false);
+    }
+  }, [competitionId]);
+
+  useEffect(() => {
+    fetchCompetitionData();
+  }, [competitionId, fetchCompetitionData]);
+
   useEffect(() => {
     if (competitionId) {
       axios
@@ -61,6 +82,15 @@ const CompetitionPage = () => {
         })
         .catch((error) => {
           console.error("Error fetching competition data:", error);
+          if (axios.isAxiosError(error) && error.response?.status === 404) {
+            toast({
+              title: "Error",
+              description: "Competition not found.",
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+            });
+          }
           setLoading(false);
         });
 
@@ -81,6 +111,15 @@ const CompetitionPage = () => {
         })
         .catch((error) => {
           console.error("Error fetching participants data:", error);
+          if (axios.isAxiosError(error) && error.response?.status === 404) {
+            toast({
+              title: "Error",
+              description: "Participants not found.",
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+            });
+          }
           setLoading(false);
         });
     }
@@ -99,16 +138,13 @@ const CompetitionPage = () => {
     );
   }
 
-  if (!competitionData) {
-    return <Box>No competition data found.</Box>;
-  }
-
   const handleTabChange = (index: React.SetStateAction<number>) => {
     setSelectedTab(index);
   };
 
   const handleJoinCompetition = async () => {
-    if (competitionData.status !== "Open") {
+    fetchCompetitionData();
+    if (competitionData?.status !== "Open") {
       toast({
         title: "Competition not open",
         description: "The competition is not open for joining.",
@@ -187,7 +223,7 @@ const CompetitionPage = () => {
         },
         data: {
           participant: {
-            competition_id: competitionData.competition_id,
+            competition_id: competitionData?.competition_id,
             participant_id: session?.userId,
           },
         },
@@ -229,11 +265,12 @@ const CompetitionPage = () => {
         textAlign="center"
         fontSize={["2xl", "3xl", "4xl"]}
       >
-        {competitionData.name}
+        {competitionData?.name}
       </Heading>
       <Box textAlign="center" mb={6}>
         <Button
           colorScheme={isParticipant ? "orange" : "teal"}
+          mb={4}
           onClick={
             isParticipant ? handleLeaveCompetition : handleJoinCompetition
           }
@@ -272,15 +309,15 @@ const CompetitionPage = () => {
           {selectedTab === 2 && (
             <CompetitionParticipants
               participantsList={participants}
-              participantLimit={competitionData.participant_limit}
+              participantLimit={competitionData?.participant_limit}
             />
           )}
           {selectedTab === 3 && (
             <CompetitionResults
               competitionId={competitionId?.toString() ?? ""}
-              penaltyTime={competitionData.penalty_time.toString()}
+              penaltyTime={competitionData?.penalty_time.toString() || ""}
               participants={participants}
-              organizerId={competitionData.organizer_id}
+              organizerId={competitionData?.organizer_id || ""}
             />
           )}
         </>
@@ -322,23 +359,23 @@ const CompetitionPage = () => {
               <TabPanel>
                 <CompetitionExercises
                   competitionId={
-                    competitionData.competition_id?.toString() ?? ""
+                    competitionData?.competition_id?.toString() ?? ""
                   }
-                  organizerId={competitionData.organizer_id}
+                  organizerId={competitionData?.organizer_id ?? ""}
                 />
               </TabPanel>
               <TabPanel>
                 <CompetitionParticipants
                   participantsList={participants}
-                  participantLimit={competitionData.participant_limit}
+                  participantLimit={competitionData?.participant_limit}
                 />
               </TabPanel>
               <TabPanel>
                 <CompetitionResults
                   competitionId={competitionId?.toString() ?? ""}
-                  penaltyTime={competitionData.penalty_time.toString()}
+                  penaltyTime={competitionData?.penalty_time.toString() ?? ""}
                   participants={participants}
-                  organizerId={competitionData.organizer_id}
+                  organizerId={competitionData?.organizer_id ?? ""}
                 />
               </TabPanel>
             </TabPanels>

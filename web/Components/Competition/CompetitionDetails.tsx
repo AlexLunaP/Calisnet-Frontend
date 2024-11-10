@@ -16,6 +16,12 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   useToast,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
 } from "@chakra-ui/react";
 import { IconType } from "react-icons";
 import { FaCircle } from "react-icons/fa6";
@@ -70,13 +76,14 @@ const CompetitionDetails = ({
   participants,
 }: CompetitionDetailsProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [competitionDataState, setCompetitionData] = useState(competitionData);
   const [editedData, setEditedData] = useState({
-    date: competitionData.date,
-    status: competitionData.status,
-    location: competitionData.location,
-    description: competitionData.description,
-    participant_limit: competitionData.participant_limit,
-    penalty_time: competitionData.penalty_time,
+    date: competitionData?.date,
+    status: competitionData?.status,
+    location: competitionData?.location,
+    description: competitionData?.description,
+    participant_limit: competitionData?.participant_limit,
+    penalty_time: competitionData?.penalty_time,
   });
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(
     null
@@ -84,8 +91,11 @@ const CompetitionDetails = ({
   const [locationError, setLocationError] = useState<string | null>(null);
   const [markerIcon, setMarkerIcon] = useState<L.Icon | null>(null);
   const { data: session } = useSession();
-  const status = competitionStatusMapping[competitionData.status];
-  const formattedDate = new Date(competitionData.date).toLocaleDateString(
+  const status =
+    competitionStatusMapping[
+      competitionDataState?.status || competitionData?.status
+    ];
+  const formattedDate = new Date(competitionDataState?.date).toLocaleDateString(
     "es-ES",
     {
       year: "numeric",
@@ -94,9 +104,62 @@ const CompetitionDetails = ({
     }
   );
 
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [organizer, setOrganizer] = useState<any>(null);
+  const cancelRef = React.useRef<HTMLButtonElement>(null);
+
   const handleEditToggle = () => {
     setIsEditing(!isEditing);
   };
+
+  const fetchCompetitionDetails = async () => {
+    if (!competitionData?.competition_id) {
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competitions/${competitionData.competition_id}`
+      );
+      setCompetitionData(response.data);
+      setEditedData(response.data);
+    } catch (error) {
+      console.error("Error fetching competition data:", error);
+      toast({
+        title: "Error fetching competition data",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const fetchOrganizerDetails = async () => {
+    if (!competitionData?.organizer_id) {
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users/${competitionData.organizer_id}`
+      );
+      setOrganizer(response.data);
+    } catch (error) {
+      console.error("Error fetching organizer details:", error);
+      toast({
+        title: "Error fetching organizer details",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchCompetitionDetails();
+    fetchOrganizerDetails();
+  }, [competitionData?.competition_id, competitionData?.organizer_id]);
 
   const handleInputChange = (e: {
     target?: { name: any; value: any };
@@ -104,13 +167,22 @@ const CompetitionDetails = ({
     value?: any;
   }) => {
     const { name, value } = e.target ? e.target : e;
-    setEditedData({ ...editedData, [name]: value });
+    if (name === "status" && value === "Cancelled") {
+      setPendingStatus(value);
+      setIsAlertOpen(true);
+    } else {
+      setEditedData({ ...editedData, [name]: value });
+    }
   };
 
   const toast = useToast();
 
   const handleSave = async () => {
     try {
+      const editedDataWithId = {
+        ...editedData,
+        competition_id: competitionData?.competition_id,
+      };
       const options = {
         headers: {
           "Content-Type": "application/json",
@@ -119,16 +191,18 @@ const CompetitionDetails = ({
       };
       const response = await axios.put(
         `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competitions/${competitionData.competition_id}`,
-        editedData,
+        editedDataWithId,
         options
       );
       setIsEditing(false);
+      setCompetitionData(editedDataWithId);
       toast({
         title: "Competition updated successfully",
         status: "success",
         duration: 5000,
         isClosable: true,
       });
+      fetchCompetitionDetails();
     } catch (error) {
       console.error("Error updating competition:", error);
       toast({
@@ -140,7 +214,18 @@ const CompetitionDetails = ({
     }
   };
 
-  const isOrganizer = session?.userId === competitionData.organizer_id;
+  const handleAlertCancel = () => {
+    setIsAlertOpen(false);
+    setPendingStatus(null);
+  };
+
+  const handleAlertConfirm = () => {
+    setIsAlertOpen(false);
+    setEditedData({ ...editedData, status: pendingStatus });
+    setPendingStatus(null);
+  };
+
+  const isOrganizer = session?.userId === competitionData?.organizer_id;
 
   useEffect(() => {
     const geocodeLocation = async (locationName: String) => {
@@ -153,8 +238,6 @@ const CompetitionDetails = ({
           const { lat, lon } = data[0];
           setLocation({ lat: parseFloat(lat), lon: parseFloat(lon) });
           setLocationError(null);
-        } else {
-          throw new Error("Location not found");
         }
       } catch (error) {
         console.error("Failed to geocode location:", error);
@@ -162,10 +245,10 @@ const CompetitionDetails = ({
       }
     };
 
-    if (competitionData.location) {
-      geocodeLocation(competitionData.location);
+    if (competitionData?.location) {
+      geocodeLocation(competitionData?.location);
     }
-  }, [competitionData.location]);
+  }, [competitionData?.location]);
 
   useEffect(() => {
     // Dynamically import L from leaflet on the client side
@@ -185,7 +268,7 @@ const CompetitionDetails = ({
   return (
     <VStack
       spacing={4}
-      align="start"
+      align="center"
       bg="brand.50"
       p={4}
       borderRadius="md"
@@ -193,14 +276,20 @@ const CompetitionDetails = ({
       w="full"
     >
       <Image
-        src={competitionData.image ? competitionData.image : null}
+        src={competitionData?.image ? competitionData?.image : null}
         alt={"competition image"}
         borderRadius="md"
-        boxSize="400px" // Set the size of the image
+        boxSize="400px"
         objectFit="cover"
       />
       {isEditing ? (
-        <Grid templateColumns="auto 1fr" gap={4} w="full" maxW="md">
+        <Grid
+          templateColumns="auto 1fr"
+          gap={4}
+          w="full"
+          maxW="md"
+          alignItems="start"
+        >
           <Text fontSize="lg" color="brand.700" textAlign="left">
             <Text as="span" fontWeight="bold">
               Date:
@@ -311,49 +400,62 @@ const CompetitionDetails = ({
         </Grid>
       ) : (
         <>
-          <Text fontSize="lg" color="brand.700">
-            <Text as="span" fontWeight="bold">
-              Date:
-            </Text>{" "}
-            {formattedDate}
-          </Text>
-          <HStack fontSize="lg" color="brand.700">
-            <Text as="span" fontWeight="bold">
-              Status:
-            </Text>{" "}
-            <Icon as={status.icon} color={status.color} />
-            <Text>{status.text}</Text>
-          </HStack>
-          <Text fontSize="lg" color="brand.700">
-            <Text as="span" fontWeight="bold">
-              Description:
-            </Text>{" "}
-            {competitionData.description}
-          </Text>
-          <Text fontSize="lg" color="brand.700">
-            <Text as="span" fontWeight="bold">
-              Current participants:
-            </Text>{" "}
-            {participants.length}
-            {competitionData.participant_limit !== 0 && (
-              <> / {competitionData.participant_limit}</>
-            )}
-          </Text>
-          <Text fontSize="lg" color="brand.700">
-            <Text as="span" fontWeight="bold">
-              Time added per penalty:
-            </Text>{" "}
-            {competitionData.penalty_time} seconds
-          </Text>
-          <Text as="span" fontWeight="bold">
-            Location:
-          </Text>{" "}
-          {competitionData.location}
+          <Box textAlign="start" mt={8} mb={4}>
+            <Text fontSize="lg" color="brand.700">
+              <Text as="span" fontWeight="bold">
+                Organizer: @
+              </Text>
+              <a
+                href={`/user/${organizer?.username}`}
+                style={{ color: "black" }}
+              >
+                {organizer?.username}
+              </a>
+            </Text>
+            <Text fontSize="lg" color="brand.700">
+              <Text as="span" fontWeight="bold">
+                Date:
+              </Text>{" "}
+              {formattedDate}
+            </Text>
+            <HStack fontSize="lg" color="brand.700">
+              <Text as="span" fontWeight="bold">
+                Status:
+              </Text>{" "}
+              <Icon as={status?.icon} color={status?.color} />
+              <Text>{status?.text}</Text>
+            </HStack>
+            <Text fontSize="lg" color="brand.700">
+              <Text as="span" fontWeight="bold">
+                Description:
+              </Text>{" "}
+              {competitionData?.description}
+            </Text>
+            <Text fontSize="lg" color="brand.700">
+              <Text as="span" fontWeight="bold">
+                Current participants:
+              </Text>{" "}
+              {participants.length}
+              {competitionData?.participant_limit !== 0 && (
+                <> / {competitionData?.participant_limit}</>
+              )}
+            </Text>
+            <Text fontSize="lg" color="brand.700">
+              <Text as="span" fontWeight="bold">
+                Time added per penalty:
+              </Text>{" "}
+              {competitionData?.penalty_time} seconds
+            </Text>
+          </Box>
           {isOrganizer && (
             <Button color={"teal"} onClick={handleEditToggle}>
               Edit
             </Button>
           )}
+          <Text as="span" fontWeight="bold" mt={8}>
+            Location:
+          </Text>{" "}
+          {competitionData?.location}
           {location && (
             <MapContainer
               center={[location.lat, location.lon]}
@@ -377,6 +479,37 @@ const CompetitionDetails = ({
           )}
         </>
       )}
+      <AlertDialog
+        isOpen={isAlertOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={handleAlertCancel}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Cancel Competition
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              <Text as="span" fontSize="large">
+                Are you sure you want to cancel this competition?
+              </Text>
+              <Text as="span" fontWeight="bold" fontSize={"large"}>
+                (Participants will be notified by email)
+              </Text>
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={handleAlertCancel}>
+                No
+              </Button>
+              <Button colorScheme="red" onClick={handleAlertConfirm} ml={3}>
+                Yes
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </VStack>
   );
 };

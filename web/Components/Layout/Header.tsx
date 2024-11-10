@@ -20,12 +20,7 @@ import {
   MenuDivider,
   Center,
 } from "@chakra-ui/react";
-import {
-  HamburgerIcon,
-  CloseIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-} from "@chakra-ui/icons";
+import { HamburgerIcon, CloseIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { Link as ChakraLink } from "@chakra-ui/react";
 import NextLink from "next/link";
 
@@ -33,9 +28,9 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { signOut, useSession } from "next-auth/react";
-import { Session } from "next-auth";
 import axios from "axios";
 import Image from "next/image";
+import AthletesSearch from "../Athlete/AthletesSearch";
 
 interface UserData {
   userId: string;
@@ -53,20 +48,20 @@ interface NavItem {
 
 const NAV_ITEMS: Array<NavItem> = [
   {
-    label: "Home",
-    href: "/",
-  },
-  {
     label: "Competitions",
-    href: "/competition/competitions",
+    href: "/competitions",
     children: [
       {
         label: "Explore Competitions",
-        href: "/competition/competitions",
+        href: "/competitions",
       },
       {
         label: "My Competitions",
-        href: "/competition/user-competitions",
+        href: "/competitions/my-competitions",
+      },
+      {
+        label: "Create a new competition",
+        href: "/competitions/create",
       },
     ],
   },
@@ -74,16 +69,20 @@ const NAV_ITEMS: Array<NavItem> = [
 
 export default function Header() {
   const { isOpen, onToggle, onClose } = useDisclosure();
+  const {
+    isOpen: isModalOpen,
+    onOpen: onModalOpen,
+    onClose: onModalClose,
+  } = useDisclosure();
   const { data: session, status } = useSession();
   const router = useRouter();
-
   const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
     if (session) {
       axios
         .get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/user/get/${session.userId}`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users/${session.userId}`
         )
         .then((response) => {
           console.log(response);
@@ -132,17 +131,17 @@ export default function Header() {
   return (
     <Box>
       <Flex
-        bg={"lightOrange"}
+        bg={"warmYellow"}
         color={"gray.600"}
-        minH={"60px"}
-        py={{ base: 2 }}
-        px={{ base: 4 }}
-        pl={{ base: 8 }}
+        minH={"40px"}
+        py={{ base: 1 }}
+        px={{ base: 2 }}
+        pl={{ base: 4 }}
         borderBottom={1}
         borderStyle={"solid"}
         borderColor={"gray.200"}
         align={"center"}
-        justify={"space-between"}
+        justify={"center"}
       >
         {/* Mobile Menu Button */}
         <Flex
@@ -194,6 +193,20 @@ export default function Header() {
           <Flex justify="center" ml={10} display={{ base: "none", md: "flex" }}>
             <DesktopNav />
           </Flex>
+          <Text
+            ml={10}
+            fontSize={"large"}
+            fontFamily={"heading"}
+            cursor="pointer"
+            onClick={onModalOpen}
+            _hover={{
+              textDecoration: "none",
+              color: "charcoalGray",
+            }}
+          >
+            Athletes
+          </Text>
+          <AthletesSearch isOpen={isModalOpen} onClose={onModalClose} />
         </Flex>
 
         {/* Sign In / Sign Up Buttons or Profile Button */}
@@ -291,6 +304,14 @@ const DesktopNav = () => {
   const linkHoverColor = "charcoalGray";
   const popoverContentBgColor = "white";
 
+  const handleNavClick = (href: string) => {
+    if (href === "/competitions/my-competitions" && !session) {
+      router.push("/login");
+    } else {
+      router.push(href);
+    }
+  };
+
   return (
     <Stack direction={"row"} spacing={4}>
       {NAV_ITEMS.map((navItem) => (
@@ -300,12 +321,16 @@ const DesktopNav = () => {
               <NextLink href={navItem.href ?? "/"} passHref>
                 <ChakraLink
                   p={2}
-                  fontSize={"md"}
+                  fontSize={"large"}
                   fontWeight={500}
                   color={linkColor}
                   _hover={{
                     textDecoration: "none",
                     color: linkHoverColor,
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNavClick(navItem.href ?? "/");
                   }}
                 >
                   {navItem.label}
@@ -335,6 +360,10 @@ const DesktopNav = () => {
                         p={2}
                         rounded={"md"}
                         _hover={{ bg: "lightOrange" }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleNavClick(child.href ?? "/");
+                        }}
                       >
                         <Stack direction={"row"} align={"center"}>
                           <Box>

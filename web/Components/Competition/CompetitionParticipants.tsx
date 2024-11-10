@@ -47,29 +47,11 @@ const CompetitionParticipants: React.FC<CompetitionParticipantsProps> = ({
         setParticipants(users);
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 404) {
-          toast({
-            title: "No participants found for this competition",
-            status: "error",
-            duration: 5000,
-            isClosable: true,
-            containerStyle: {
-              marginBottom: "100px",
-            },
-          });
-        } else {
-          toast({
-            title: "Error fetching participants or user details",
-            status: "error",
-            duration: 5000,
-            isClosable: true,
-            containerStyle: {
-              marginBottom: "100px",
-            },
-          });
+          console.log("No participants found");
         }
+        setParticipants([]);
       } finally {
         setLoading(false);
-        setParticipants([]);
       }
     };
 

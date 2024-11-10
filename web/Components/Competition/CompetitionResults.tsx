@@ -12,13 +12,20 @@ import {
   Select,
   Input,
   useToast,
+  Text,
+  IconButton,
 } from "@chakra-ui/react";
+import { FaTrash } from "react-icons/fa";
 import { useSession } from "next-auth/react";
 import { userAgent } from "next/server";
 
 interface Participant {
-  participant_id: number;
-  participant_name: string;
+  participant_id: string;
+  username: string;
+}
+
+interface CompetitionResultsProps {
+  competitionId: string;
 }
 
 interface Result {
@@ -28,26 +35,31 @@ interface Result {
   result_time: string;
   penalties: number;
   penalty_time: string;
+  time: string; // Added time property
 }
 
 const CompetitionResults = ({
   competitionId,
   penaltyTime,
-  participants,
   organizerId,
 }: {
   competitionId: string;
   penaltyTime: string;
-  participants: Participant[];
   organizerId: string;
 }) => {
-  const [results, setResults] = useState<Result[]>([]);
-  const [newResult, setNewResult] = useState({
-    participant_id: "",
-    time: "",
-    penalties: "",
-  });
   const { data: session } = useSession();
+  const [results, setResults] = useState<Result[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [selectedParticipant, setSelectedParticipant] = useState<string>("");
+  const [newResult, setNewResult] = useState<Result>({
+    participant_id: 0,
+    participant_name: "",
+    rank: 0,
+    result_time: "",
+    penalties: 0,
+    penalty_time: "",
+    time: "",
+  });
   const [noResults, setNoResults] = useState(false);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
@@ -70,52 +82,59 @@ const CompetitionResults = ({
         setResults(fetchedResults);
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 404) {
-          toast({
-            title: "No results found for this competition",
-            status: "error",
-            duration: 5000,
-            isClosable: true,
-            containerStyle: {
-              marginBottom: "100px",
-            },
-          });
-        } else {
-          toast({
-            title: "Error results participants or user details",
-            status: "error",
-            duration: 5000,
-            isClosable: true,
-            containerStyle: {
-              marginBottom: "100px",
-            },
-          });
+          console.log("No results found");
         }
       } finally {
         setLoading(false);
       }
     };
 
+    const fetchParticipants = async () => {
+      try {
+        const response = await axios.get<Participant[]>(
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participants?competition_id=${competitionId}`
+        );
+
+        const participantsData = response.data;
+
+        // Fetch user details for each participant
+        const userDetailsPromises = participantsData.map((participant) =>
+          axios.get(
+            `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users/${participant.participant_id}`
+          )
+        );
+
+        const userDetailsResponses = await Promise.all(userDetailsPromises);
+        const participantsWithUsernames = participantsData.map(
+          (participant, index) => ({
+            ...participant,
+            username: userDetailsResponses[index].data.username,
+          })
+        );
+
+        setParticipants(participantsWithUsernames);
+      } catch (error) {
+        console.error("Error fetching participants:", error);
+      }
+    };
+
     fetchResults();
+    fetchParticipants();
   }, [competitionId]);
 
   const timeToSeconds = (time: string) => {
-    if (!time || !time.includes(":")) {
-      return NaN;
-    }
-    const [minutes, seconds] = time.split(":").map(Number);
-    if (isNaN(minutes) || isNaN(seconds)) {
-      return NaN;
-    }
-    return minutes * 60 + seconds;
+    if (!time) return 0; // Add validation to check for undefined values
+    const [hours, minutes, seconds] = time.split(":").map(Number);
+    return hours * 3600 + minutes * 60 + seconds;
   };
 
   const secondsToTime = (seconds: number) => {
-    if (isNaN(seconds)) {
-      return "Invalid time";
-    }
-    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
+    return `${hours}:${minutes < 10 ? "0" : ""}${minutes}:${
+      remainingSeconds < 10 ? "0" : ""
+    }${remainingSeconds}`;
   };
 
   const calculateFinalTime = (
@@ -134,78 +153,150 @@ const CompetitionResults = ({
     return secondsToTime(finalTimeInSeconds);
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setNewResult((prev) => ({ ...prev, [name]: value }));
+    setNewResult({ ...newResult, [name]: value });
   };
 
-  const handleAddResult = () => {
-    const newResultData = {
-      participant_id: parseInt(newResult.participant_id),
-      time: newResult.time,
-      penalties: parseInt(newResult.penalties),
-    };
+  const handleParticipantChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedParticipant(e.target.value);
+    setNewResult({ ...newResult, participant_id: Number(e.target.value) });
+  };
 
-    axios
-      .post(
+  const handleSaveResult = async () => {
+    try {
+      const options = {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      };
+      const body = {
+        result: {
+          competition_id: competitionId,
+          participant_id: newResult.participant_id,
+          result_time: newResult.time,
+          penalties: newResult.penalties,
+          rank: newResult.rank,
+        },
+      };
+      await axios.post(
         `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/results`,
-        newResultData
-      )
-      .then((response) => {
-        setResults((prev) => [...prev, response.data]);
-        setNewResult({
-          participant_id: "",
-          time: "",
-          penalties: "",
-        });
-      })
-      .catch((error) => {
-        console.error("Error adding result:", error);
+        newResult,
+        options
+      );
+      toast({
+        title: "Result added",
+        description: "The result has been added successfully.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
       });
+      setResults([...results, newResult]);
+      setNewResult({
+        participant_id: 0,
+        participant_name: "",
+        rank: 0,
+        result_time: "",
+        penalties: 0,
+        penalty_time: "",
+        time: "",
+      });
+      setSelectedParticipant("");
+    } catch (error) {
+      console.error("Error adding result:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while adding the result.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
+
+  const handleDeleteResult = async (participant_id: string) => {
+    try {
+      const options = {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      };
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/results/${participant_id}`,
+        options
+      );
+      toast({
+        title: "Result deleted",
+        description: "The result has been deleted successfully.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+      setResults(
+        results.filter(
+          (result) => result.participant_id !== Number(participant_id)
+        )
+      );
+    } catch (error) {
+      console.error("Error deleting result:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the result.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
   const isOrganizer = session?.userId === organizerId;
 
   return (
-    <Box overflowX="auto" bg="brand.50" p={4} borderRadius="md" boxShadow="md">
-      {isOrganizer && (
-        <Box mb={4}>
-          <Select
-            placeholder="Select participant"
-            name="participant_id"
-            value={newResult.participant_id}
-            onChange={handleInputChange}
-          >
-            {participants.map((participant) => (
-              <option
-                key={participant.participant_id}
-                value={participant.participant_id}
-              >
-                {participant.participant_name}
-              </option>
-            ))}
-          </Select>
-          <Input
-            placeholder="Time (MM:SS)"
-            name="time"
-            value={newResult.time}
-            onChange={handleInputChange}
-            mt={2}
-          />
-          <Input
-            placeholder="Penalties"
-            name="penalties"
-            value={newResult.penalties}
-            onChange={handleInputChange}
-            type="number"
-            mt={2}
-          />
-          <Button onClick={handleAddResult} mt={2} colorScheme="teal">
-            Add Result
-          </Button>
-        </Box>
-      )}
+    <Box>
+      <Text fontSize="xl" mb={4}>
+        Competition Results
+      </Text>
+      <Box mb={4}>
+        Participant
+        <Select
+          placeholder="Select participant"
+          value={selectedParticipant}
+          onChange={handleParticipantChange}
+          mb={6}
+        >
+          {participants.map((participant) => (
+            <option
+              key={participant.participant_id}
+              value={participant.participant_id}
+            >
+              {participant.username}
+            </option>
+          ))}
+        </Select>
+        Time
+        <Input
+          type="time"
+          name="result_time"
+          placeholder="Enter time (e.g., 12:34)"
+          value={newResult.result_time}
+          onChange={handleInputChange}
+          mt={2}
+          mb={6}
+        />
+        Number of penalties
+        <Input
+          name="penalties"
+          placeholder="Enter penalties"
+          value={newResult.penalties}
+          onChange={handleInputChange}
+          mt={2}
+          mb={4}
+        />
+        <Button onClick={handleSaveResult} colorScheme="teal" mt={2} mb={4}>
+          Save Result
+        </Button>
+      </Box>
       <Table variant="simple">
         <Thead>
           <Tr>
@@ -226,17 +317,30 @@ const CompetitionResults = ({
           ) : (
             results.map((result) => {
               const participant = participants.find(
-                (p) => p.participant_id === result.participant_id
+                (p) => p.participant_id === result.participant_id.toString()
+              );
+              const finalTime = calculateFinalTime(
+                result.result_time,
+                result.penalties,
+                result.penalty_time
               );
               return (
                 <Tr key={result.participant_id}>
-                  <Td>
-                    {participant ? participant.participant_name : "Unknown"}
-                  </Td>
+                  <Td>{participant ? participant.username : "Unknown"}</Td>
                   <Td>{result.rank}</Td>
                   <Td>{result.result_time}</Td>
                   <Td>{result.penalties}</Td>
-                  <Td>{result.result_time}</Td>
+                  <Td>{finalTime}</Td>
+                  <Td>
+                    <IconButton
+                      aria-label="Delete result"
+                      icon={<FaTrash />}
+                      colorScheme="red"
+                      onClick={() =>
+                        handleDeleteResult(result.participant_id.toString())
+                      }
+                    />
+                  </Td>
                 </Tr>
               );
             })

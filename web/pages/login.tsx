@@ -22,6 +22,9 @@ export default function LogIn() {
           status: "error",
           duration: 5000,
           isClosable: true,
+          containerStyle: {
+            marginBottom: "100px",
+          },
         });
       } else if (result?.ok) {
         toast({
@@ -30,6 +33,9 @@ export default function LogIn() {
           status: "success",
           duration: 5000,
           isClosable: true,
+          containerStyle: {
+            marginBottom: "100px",
+          },
         });
         Router.push("/");
       }

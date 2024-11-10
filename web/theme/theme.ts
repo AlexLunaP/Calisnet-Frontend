@@ -8,8 +8,8 @@ const theme = extendTheme({
     body: `'Montserrat', sans-serif`,
   },
   colors: {
-    deepOrange: "#FF7D29",
-    warmYellow: "#F9A825",
+    deepOrange: "#ED8936",
+    warmYellow: "#F7C59F",
     lightGray: "gray.600",
     charcoalGray: "#333333",
     softPeach: "#FFBF78",

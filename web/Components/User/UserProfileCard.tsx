@@ -128,13 +128,13 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
       _dark={{
         bg: "#3e3e3e",
       }}
-      p={50}
+      p={4}
       w="full"
       alignItems="center"
       justifyContent="center"
     >
       <Box
-        w="sm"
+        w="xs"
         mx="auto"
         bg="white"
         _dark={{
@@ -172,7 +172,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
               transform: "scale(1)",
             }}
           >
-            <Avatar size={"l"} />
+            <Avatar size={"md"} />
           </Flex>
         )}
         <Flex alignItems="center" px={6} py={3} bg="charcoalGray">
