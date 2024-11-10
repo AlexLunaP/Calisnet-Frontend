@@ -27,13 +27,11 @@ interface CompetitionData {
   status: string;
 }
 
-interface UserCompetitionsGridProps {
+interface MyCompetitionsGridProps {
   userId: string;
 }
 
-const UserCompetitionsGrid: React.FC<UserCompetitionsGridProps> = ({
-  userId,
-}) => {
+const MyCompetitionsGrid: React.FC<MyCompetitionsGridProps> = ({ userId }) => {
   const [organizedCompetitions, setOrganizedCompetitions] = useState<
     CompetitionData[]
   >([]);
@@ -48,48 +46,38 @@ const UserCompetitionsGrid: React.FC<UserCompetitionsGridProps> = ({
       try {
         // Fetch competitions where the user is an organizer
         const organizerResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competition/user/${userId}`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competitions?organizer_id=${userId}`
         );
-        const organizerCompetitions: CompetitionData[] = organizerResponse.data;
+        const organizedCompetitions: CompetitionData[] = organizerResponse.data;
+
+        setOrganizedCompetitions(organizedCompetitions);
 
         // Fetch participations where the user is a participant
         const participationsResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participant/participant/${userId}`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participants?participant_id=${userId}`
         );
 
-        const participations: { competition_id: string }[] =
-          participationsResponse.data;
+        if (participationsResponse.data.length != 0) {
+          const participations: { competition_id: string }[] =
+            participationsResponse.data;
 
-        // Extract competition IDs from participations
-        const competitionIds = participations.map(
-          (participation) => participation.competition_id
-        );
+          // Extract competition IDs from participations
+          const competitionIds = participations.map(
+            (participation) => participation.competition_id
+          );
 
-        // Fetch competition details for each competition ID
-        const participantCompetitions: CompetitionData[] = await Promise.all(
-          competitionIds.map(async (competitionId) => {
-            const response = await axios.get(
-              `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competition/get/${competitionId}`
-            );
-            return response.data;
-          })
-        );
+          // Fetch competition details for each competition ID
+          const participantCompetitions: CompetitionData[] = await Promise.all(
+            competitionIds.map(async (competitionId) => {
+              const response = await axios.get(
+                `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competitions/${competitionId}`
+              );
+              return response.data;
+            })
+          );
+          setParticipatedCompetitions(participantCompetitions);
+        }
 
-        // Combine and sort competitions by date
-        const sortedOrganizedCompetitions = organizerCompetitions.sort(
-          (a: CompetitionData, b: CompetitionData) => {
-            return new Date(b.date).getTime() - new Date(a.date).getTime();
-          }
-        );
-
-        const sortedParticipatedCompetitions = participantCompetitions.sort(
-          (a: CompetitionData, b: CompetitionData) => {
-            return new Date(b.date).getTime() - new Date(a.date).getTime();
-          }
-        );
-
-        setOrganizedCompetitions(sortedOrganizedCompetitions);
-        setParticipatedCompetitions(sortedParticipatedCompetitions);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching competitions:", error);
@@ -102,7 +90,7 @@ const UserCompetitionsGrid: React.FC<UserCompetitionsGridProps> = ({
 
   const [organizedPage, setOrganizedPage] = useState(1);
   const [participatedPage, setParticipatedPage] = useState(1);
-  const itemsPerPage = 6; // Number of items per page
+  const itemsPerPage = 6;
 
   const organizedCompetitionsToDisplay = organizedCompetitions.slice(
     (organizedPage - 1) * itemsPerPage,
@@ -128,7 +116,7 @@ const UserCompetitionsGrid: React.FC<UserCompetitionsGridProps> = ({
             },
           }}
         >
-          Organized
+          Created
         </Tab>
         <Tab
           sx={{
@@ -137,7 +125,7 @@ const UserCompetitionsGrid: React.FC<UserCompetitionsGridProps> = ({
             },
           }}
         >
-          Participations
+          Joined
         </Tab>
       </TabList>
 
@@ -181,4 +169,4 @@ const UserCompetitionsGrid: React.FC<UserCompetitionsGridProps> = ({
   );
 };
 
-export default UserCompetitionsGrid;
+export default MyCompetitionsGrid;

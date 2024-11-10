@@ -53,7 +53,7 @@ const CompetitionPage = () => {
     if (competitionId) {
       axios
         .get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competition/get/${competitionId}`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competitions/${competitionId}`
         )
         .then((response) => {
           setCompetitionData(response.data);
@@ -66,7 +66,7 @@ const CompetitionPage = () => {
 
       axios
         .get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participant/competition/${competitionId}`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participants?competition_id=${competitionId}`
         )
         .then((response) => {
           const userId = session?.userId;
@@ -115,6 +115,9 @@ const CompetitionPage = () => {
         status: "warning",
         duration: 5000,
         isClosable: true,
+        containerStyle: {
+          marginBottom: "100px",
+        },
       });
       return;
     }
@@ -126,6 +129,9 @@ const CompetitionPage = () => {
         status: "warning",
         duration: 5000,
         isClosable: true,
+        containerStyle: {
+          marginBottom: "100px",
+        },
       });
       return;
     }
@@ -137,7 +143,7 @@ const CompetitionPage = () => {
         },
       };
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participant/create/`,
+        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participants`,
         {
           participant: {
             competition_id: competitionData.competition_id,
@@ -161,6 +167,9 @@ const CompetitionPage = () => {
           status: "error",
           duration: 5000,
           isClosable: true,
+          containerStyle: {
+            marginBottom: "100px",
+          },
         });
       }
     } catch (error) {
@@ -184,7 +193,7 @@ const CompetitionPage = () => {
         },
       };
       const response = await axios.delete(
-        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participant/delete/`,
+        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participants`,
         options
       );
       if (response.status === 200) {
@@ -193,6 +202,9 @@ const CompetitionPage = () => {
           status: "success",
           duration: 5000,
           isClosable: true,
+          containerStyle: {
+            marginBottom: "100px",
+          },
         });
         setIsParticipant(false);
       }
@@ -202,6 +214,9 @@ const CompetitionPage = () => {
         status: "error",
         duration: 5000,
         isClosable: true,
+        containerStyle: {
+          marginBottom: "100px",
+        },
       });
     }
   };
@@ -256,11 +271,8 @@ const CompetitionPage = () => {
           )}
           {selectedTab === 2 && (
             <CompetitionParticipants
-              competitionId={
-                Array.isArray(competitionId)
-                  ? competitionId[0]
-                  : competitionId ?? ""
-              }
+              participantsList={participants}
+              participantLimit={competitionData.participant_limit}
             />
           )}
           {selectedTab === 3 && (
@@ -317,11 +329,8 @@ const CompetitionPage = () => {
               </TabPanel>
               <TabPanel>
                 <CompetitionParticipants
-                  competitionId={
-                    Array.isArray(competitionId)
-                      ? competitionId[0]
-                      : competitionId ?? ""
-                  }
+                  participantsList={participants}
+                  participantLimit={competitionData.participant_limit}
                 />
               </TabPanel>
               <TabPanel>
