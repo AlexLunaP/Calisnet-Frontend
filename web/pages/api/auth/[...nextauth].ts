@@ -1,4 +1,4 @@
-import NextAuth, { User, NextAuthOptions, Profile, Account } from "next-auth";
+import NextAuth, { User, NextAuthOptions, Session } from "next-auth";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import axios from "axios";
 import * as jose from "jose";
@@ -11,7 +11,6 @@ import {
 import CredentialsProvider from "next-auth/providers/credentials";
 import { NextApiRequest, NextApiResponse } from "next";
 import { JWT } from "next-auth/jwt";
-import { Session } from "next-auth/core/types";
 
 declare module "next-auth" {
   interface User {
@@ -59,7 +58,7 @@ const options = {
           }
 
           const res = await axios.post(
-            `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/user/login/`,
+            `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users/login`,
             credentials
           );
 
