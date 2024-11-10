@@ -43,9 +43,8 @@ const Profile: React.FC = () => {
       const fetchUserData = async () => {
         try {
           const response = await axios.get(
-            `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/user/get_by_username/${username}`
+            `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users/username/${username}`
           );
-          console.log("Fetched user data:", response.data); // Log the entire response data
           const data = response.data;
           setUserData({
             userId: data.user_id || "",
@@ -111,7 +110,10 @@ const Profile: React.FC = () => {
   return (
     <Box p={2}>
       <Flex justifyContent="flex-start">
-        <UserProfileCard username={userData?.username ?? ""} />
+        <UserProfileCard
+          user_id={userData?.userId ?? ""}
+          username={userData?.username ?? ""}
+        />
       </Flex>
 
       {/* Tabs for Sections */}

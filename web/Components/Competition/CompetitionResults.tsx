@@ -11,8 +11,10 @@ import {
   Button,
   Select,
   Input,
+  useToast,
 } from "@chakra-ui/react";
 import { useSession } from "next-auth/react";
+import { userAgent } from "next/server";
 
 interface Participant {
   participant_id: number;
@@ -46,19 +48,54 @@ const CompetitionResults = ({
     penalties: "",
   });
   const { data: session } = useSession();
+  const [noResults, setNoResults] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const toast = useToast();
 
   useEffect(() => {
-    axios
-      .get(
-        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/result/competition/${competitionId}`
-      )
-      .then((response) => {
-        console.log("API Response:", response.data); // Debugging log
-        setResults(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching results:", error);
-      });
+    const fetchResults = async () => {
+      try {
+        const response = await axios.get<Result[]>(
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/results?competition_id=${competitionId}`
+        );
+        const fetchedResults = response.data;
+
+        // Handle case where there are no results
+        if (!fetchedResults || fetchedResults.length === 0) {
+          setNoResults(true);
+          setLoading(false);
+          return;
+        }
+
+        setResults(fetchedResults);
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          toast({
+            title: "No results found for this competition",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+            containerStyle: {
+              marginBottom: "100px",
+            },
+          });
+        } else {
+          toast({
+            title: "Error results participants or user details",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+            containerStyle: {
+              marginBottom: "100px",
+            },
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResults();
   }, [competitionId]);
 
   const timeToSeconds = (time: string) => {
@@ -112,7 +149,10 @@ const CompetitionResults = ({
     };
 
     axios
-      .post(`${process.env.NEXT_PUBLIC_CALISNET_API_URL}/result`, newResultData)
+      .post(
+        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/results`,
+        newResultData
+      )
       .then((response) => {
         setResults((prev) => [...prev, response.data]);
         setNewResult({

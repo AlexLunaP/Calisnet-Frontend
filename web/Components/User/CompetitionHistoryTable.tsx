@@ -58,21 +58,30 @@ const CompetitionHistoryTable: React.FC<CompetitionHistoryTableProps> = ({
     { competition: Competition; result: Result }[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [noParticipants, setNoParticipants] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
         // Step 1: Fetch userId based on username
         const userResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/user/get_by_username/${username}/`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users/username/${username}`
         );
         const userId = userResponse.data.user_id;
 
         // Step 2: Fetch participations using userId
         const participationsResponse = await axios.get<Participation[]>(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participant/participant/${userId}/`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participants?participant_id=${userId}`
         );
-        const participations = participationsResponse.data;
+
+        const participations = participationsResponse?.data;
+
+        if (!participations || participations.length === 0) {
+          setNoParticipants(true);
+          setLoading(false);
+          return;
+        }
 
         // Step 3: Extract competition IDs
         const competitionIds = participations.map(
@@ -82,7 +91,7 @@ const CompetitionHistoryTable: React.FC<CompetitionHistoryTableProps> = ({
         // Step 4: Fetch competition details
         const competitionPromises = competitionIds.map((competition_id) =>
           axios.get<Competition>(
-            `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competition/get/${competition_id}`
+            `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competitions/${competition_id}`
           )
         );
         const competitionsResponses = await Promise.all(competitionPromises);
@@ -92,9 +101,9 @@ const CompetitionHistoryTable: React.FC<CompetitionHistoryTableProps> = ({
 
         // Step 5: Fetch results for the user as a participant
         const resultsResponse = await axios.get<Result[]>(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/result/participant/${userId}/`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/results?participant_id=${userId}`
         );
-        const results = resultsResponse.data;
+        const results = resultsResponse?.data;
 
         // Step 6: Combine competition details with results
         const combinedData = results.map((result) => {
@@ -115,7 +124,11 @@ const CompetitionHistoryTable: React.FC<CompetitionHistoryTableProps> = ({
           }))
         );
       } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          setHistory([]);
+        }
         console.error("Error fetching competition history:", error);
+        setError("An error occurred while fetching competition history.");
       } finally {
         setLoading(false);
       }
@@ -220,7 +233,7 @@ const CompetitionHistoryTable: React.FC<CompetitionHistoryTableProps> = ({
                   })}
                 </Td>
                 <Td>
-                  <Link href={`/competition/${competition.competition_id}`}>
+                  <Link href={`/competitions/${competition.competition_id}`}>
                     {competition.name}
                   </Link>
                 </Td>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Box, VStack, SimpleGrid, Text } from "@chakra-ui/react";
+import { Box, VStack, SimpleGrid, Text, useToast } from "@chakra-ui/react";
 import UserProfileCard from "../User/UserProfileCard";
 
 interface Participant {
@@ -12,61 +12,69 @@ interface User {
   username: string;
 }
 
-interface Competition {
-  participant_limit?: number;
+interface CompetitionParticipantsProps {
+  participantsList: Participant[];
+  participantLimit?: number;
 }
 
-const CompetitionParticipants = ({
-  competitionId,
-}: {
-  competitionId: string;
+const CompetitionParticipants: React.FC<CompetitionParticipantsProps> = ({
+  participantsList,
+  participantLimit,
 }) => {
   const [participants, setParticipants] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [participantLimit, setParticipantLimit] = useState<number | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
-    const fetchCompetitionData = async () => {
-      try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competition/get/${competitionId}`
-        );
-        const competition: Competition = response.data;
-        setParticipantLimit(competition.participant_limit || null);
-      } catch (error) {
-        console.error("Error fetching competition data:", error);
-      }
-    };
     const fetchParticipants = async () => {
       try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/participant/competition/${competitionId}`
-        );
-        const participantIds = response.data.map(
+        const participantIds = participantsList.map(
           (participant: Participant) => participant.participant_id
         );
 
         const userDetailsPromises = participantIds.map(
           (participant_id: string) =>
             axios.get(
-              `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/user/get/${participant_id}`
+              `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users/${participant_id}`
             )
         );
 
         const userDetailsResponses = await Promise.all(userDetailsPromises);
-        const users = userDetailsResponses.map((res) => res.data);
+        const users: User[] = userDetailsResponses.map(
+          (res: { data: User }) => res.data
+        );
 
         setParticipants(users);
       } catch (error) {
-        console.error("Error fetching participants or user details:", error);
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          toast({
+            title: "No participants found for this competition",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+            containerStyle: {
+              marginBottom: "100px",
+            },
+          });
+        } else {
+          toast({
+            title: "Error fetching participants or user details",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+            containerStyle: {
+              marginBottom: "100px",
+            },
+          });
+        }
       } finally {
         setLoading(false);
+        setParticipants([]);
       }
     };
 
-    fetchCompetitionData();
     fetchParticipants();
-  }, [competitionId]);
+  }, [participantsList]);
 
   return (
     <Box>

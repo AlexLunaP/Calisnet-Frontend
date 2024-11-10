@@ -12,9 +12,9 @@ export default function SignUp() {
 
   const onSignUp = useCallback(
     async (userData: SignUpFormData) => {
-      const body = { user: { userId: uuidv4(), ...userData } };
+      const body = { user: { ...userData } };
       const result = await axios.post(
-        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/user/create/`,
+        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users`,
         body
       );
 
@@ -24,6 +24,9 @@ export default function SignUp() {
           status: "success",
           duration: 5000,
           isClosable: true,
+          containerStyle: {
+            marginBottom: "100px",
+          },
         });
         Router.push("/");
         signIn("credentials", { redirect: false, ...userData });
@@ -34,6 +37,9 @@ export default function SignUp() {
           status: "error",
           duration: 5000,
           isClosable: true,
+          containerStyle: {
+            marginBottom: "100px",
+          },
         });
       }
     },

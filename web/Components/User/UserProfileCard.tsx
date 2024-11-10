@@ -50,7 +50,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
     if (username) {
       axios
         .get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/user/get_by_username/${username}`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users/username/${username}`
         )
         .then((response) => {
           console.log(response.data);
@@ -167,8 +167,12 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
             alignItems="center"
             justifyContent="center"
             bg="gray.200"
+            style={{
+              imageRendering: "auto",
+              transform: "scale(1)",
+            }}
           >
-            <Avatar size="2xl" />
+            <Avatar size={"l"} />
           </Flex>
         )}
         <Flex alignItems="center" px={6} py={3} bg="charcoalGray">

@@ -98,7 +98,7 @@ const UserProfileForm = () => {
     if (session) {
       axios
         .get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/user/get/${session.userId}`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users/${session.userId}`
         )
         .then((response) => {
           const data = response.data;
@@ -172,9 +172,8 @@ const UserProfileForm = () => {
           Authorization: `Bearer ${session?.access_token}`,
         },
       };
-      console.log(updatedData);
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/user/update/${session?.userId}/`,
+        `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users/${session?.userId}/`,
         updatedData,
         options
       );
@@ -184,6 +183,9 @@ const UserProfileForm = () => {
           status: "success",
           duration: 5000,
           isClosable: true,
+          containerStyle: {
+            marginBottom: "100px",
+          },
         });
       }
     } catch (error) {
@@ -192,6 +194,9 @@ const UserProfileForm = () => {
         status: "error",
         duration: 5000,
         isClosable: true,
+        containerStyle: {
+          marginBottom: "100px",
+        },
       });
     }
   };
@@ -237,7 +242,11 @@ const UserProfileForm = () => {
                 Photo
               </FormLabel>
               <Flex alignItems="center" mt={1}>
-                <Avatar boxSize={114} bg="gray.200" src={profileImage} />
+                <Avatar
+                  boxSize={114}
+                  bg="gray.200"
+                  src={userData?.profileImageUrl}
+                />
                 <Button
                   ml={5}
                   variant="outline"
@@ -319,9 +328,7 @@ const UserProfileForm = () => {
                   <Input
                     value={url}
                     onChange={(e) => handleInputChange(name, e.target.value)}
-                    placeholder={
-                      placeholders[name as keyof typeof placeholders]
-                    }
+                    placeholder="username"
                     focusBorderColor="brand.400"
                     rounded="md"
                     w="full"
@@ -332,16 +339,10 @@ const UserProfileForm = () => {
             </FormControl>
           </Stack>
           <Box
-            px={{
-              base: 4,
-              sm: 6,
-            }}
-            py={3}
-            bg="gray.50"
             _dark={{
               bg: "#121212",
             }}
-            textAlign="right"
+            textAlign="center"
           >
             <Button
               type="submit"
@@ -351,7 +352,7 @@ const UserProfileForm = () => {
               }}
               fontWeight="md"
             >
-              Save
+              Update
             </Button>
           </Box>
         </chakra.form>

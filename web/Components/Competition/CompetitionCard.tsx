@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Flex,
-  Image,
-  Icon,
-  chakra,
-  Skeleton,
-  Avatar,
-} from "@chakra-ui/react";
+import { Box, Flex, Icon, chakra, Skeleton, Image } from "@chakra-ui/react";
 import { useRouter } from "next/router";
 import axios from "axios";
 import { signOut } from "next-auth/react";
@@ -53,7 +45,7 @@ const CompetitionCard: React.FC<CompetitionCardProps> = ({ competitionId }) => {
     if (competitionId) {
       axios
         .get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competition/get/${competitionId}`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competitions/${competitionId}`
         )
         .then((response) => {
           console.log(response.data);
@@ -133,7 +125,7 @@ const CompetitionCard: React.FC<CompetitionCardProps> = ({ competitionId }) => {
     event: React.MouseEvent<HTMLDivElement, MouseEvent>
   ) => {
     const competitionId = competitionData?.competitionId || "";
-    router.push(`/competition/${competitionId}`);
+    router.push(`/competitions/${competitionId}`);
   };
 
   const formattedDate = competitionData?.date
@@ -171,27 +163,22 @@ const CompetitionCard: React.FC<CompetitionCardProps> = ({ competitionId }) => {
       >
         {competitionData?.image ? (
           <Image
-            width={"full"}
-            height={200}
-            fit="cover"
-            objectPosition="center"
-            src={"/competition_placeholder.svg"}
+            src={competitionData.image}
             alt="competition image"
-            style={{
-              imageRendering: "auto", // Using 'auto' for smooth rendering
-              transform: "scale(1)", // Ensure no scaling is applied
-            }}
+            width={400}
+            height={200}
+            objectFit="cover"
+            objectPosition="center"
           />
         ) : (
-          <Flex
-            w="full"
-            h="full"
-            alignItems="center"
-            justifyContent="center"
-            bg="gray.200"
-          >
-            <Avatar size="2xl" />
-          </Flex>
+          <Image
+            src="/competition_placeholder.svg"
+            alt="default place image"
+            width={400}
+            height={200}
+            objectFit="cover"
+            objectPosition="center"
+          />
         )}
         <Box py={4} px={6}>
           <chakra.h1

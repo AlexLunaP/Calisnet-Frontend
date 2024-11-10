@@ -52,13 +52,13 @@ const AchievementsTable: React.FC<AchievementsTableProps> = ({ username }) => {
       try {
         // Step 1: Fetch userId based on username
         const userResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/user/get_by_username/${username}/`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/users/username/${username}`
         );
         const userId = userResponse.data.user_id;
 
         // Step 2: Fetch results for the user as a participant
         const resultsResponse = await axios.get<Result[]>(
-          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/result/participant/${userId}/`
+          `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/results?participant_id=${userId}`
         );
         const results = resultsResponse.data;
 
@@ -73,7 +73,7 @@ const AchievementsTable: React.FC<AchievementsTableProps> = ({ username }) => {
         // Step 5: Fetch competition details
         const competitionPromises = competitionIds.map((competition_id) =>
           axios.get<Competition>(
-            `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competition/get/${competition_id}`
+            `${process.env.NEXT_PUBLIC_CALISNET_API_URL}/competitions/${competition_id}`
           )
         );
         const competitionsResponses = await Promise.all(competitionPromises);
@@ -171,7 +171,7 @@ const AchievementsTable: React.FC<AchievementsTableProps> = ({ username }) => {
                   })}
                 </Td>
                 <Td>
-                  <Link href={`/competition/${competition.competition_id}`}>
+                  <Link href={`/competitions/${competition.competition_id}`}>
                     {competition.name}
                   </Link>
                 </Td>

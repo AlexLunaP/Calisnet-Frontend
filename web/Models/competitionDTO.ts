@@ -6,6 +6,7 @@ type CompetitionDTO = {
   participantLimit: number;
   competitionDescription: string;
   penaltyTime: number;
+  image: string;
 };
 
 export default CompetitionDTO;
