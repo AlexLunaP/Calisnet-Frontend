@@ -107,10 +107,10 @@ export const SignUpForm: React.FC<Props> = ({ onSubmitForm, user }) => {
                 <Button
                   loadingText="Submitting"
                   size="lg"
-                  bg={"warmYellow"}
+                  bg={"deepOrange"}
                   color={"white"}
                   _hover={{
-                    bg: "deepOrange",
+                    bg: "warmYellow",
                   }}
                   type="submit"
                 >

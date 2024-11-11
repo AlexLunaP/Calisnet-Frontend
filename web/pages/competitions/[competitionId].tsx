@@ -316,7 +316,6 @@ const CompetitionPage = () => {
             <CompetitionResults
               competitionId={competitionId?.toString() ?? ""}
               penaltyTime={competitionData?.penalty_time.toString() || ""}
-              participants={participants}
               organizerId={competitionData?.organizer_id || ""}
             />
           )}
@@ -374,7 +373,6 @@ const CompetitionPage = () => {
                 <CompetitionResults
                   competitionId={competitionId?.toString() ?? ""}
                   penaltyTime={competitionData?.penalty_time.toString() ?? ""}
-                  participants={participants}
                   organizerId={competitionData?.organizer_id ?? ""}
                 />
               </TabPanel>

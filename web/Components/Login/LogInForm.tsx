@@ -88,10 +88,10 @@ export const LogInForm: React.FC<Props> = ({ onSubmitForm, user }) => {
               <Stack spacing={10}>
                 <Button
                   type="submit"
-                  bg={"warmYellow"}
+                  bg={"deepOrange"}
                   color={"white"}
                   _hover={{
-                    bg: "deepOrange",
+                    bg: "softPeach",
                   }}
                 >
                   Sign in

@@ -131,7 +131,7 @@ export default function Header() {
   return (
     <Box>
       <Flex
-        bg={"warmYellow"}
+        bg={"softPeach"}
         color={"gray.600"}
         minH={"40px"}
         py={{ base: 1 }}
@@ -247,7 +247,10 @@ export default function Header() {
                 >
                   Your Profile
                 </MenuItem>
-                <MenuItem onClick={() => signOut({ callbackUrl: "/" })}>
+                <MenuItem
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  color={"lightGray"}
+                >
                   Sign Out
                 </MenuItem>
               </MenuList>
@@ -273,10 +276,10 @@ export default function Header() {
                     fontSize={"md"}
                     fontWeight={600}
                     color={"white"}
-                    bg={"warmYellow"}
+                    bg={"deepOrange"}
                     mr={4}
                     _hover={{
-                      bg: "deepOrange",
+                      bg: "warmYellow",
                     }}
                   >
                     Sign Up
